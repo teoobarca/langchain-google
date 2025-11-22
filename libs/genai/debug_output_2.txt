@@ -1,0 +1,55 @@
+/Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/langsmith/schemas.py:22: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1 import (
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0
+rootdir: /Users/hamper/Documents/Programming/nexana/langchain-google/libs/genai
+configfile: pyproject.toml
+plugins: anyio-4.11.0, langsmith-0.4.46
+collected 1 item
+
+tests/unit_tests/test_chat_models.py DEBUG: part=media_resolution=None code_execution_result=None executable_code=None file_data=None function_call=None function_response=None inline_data=None text='I need to think about this...' thought=True thought_signature=b'test_signature_data' video_metadata=None, type=<class 'google.genai.types.Part'>
+F
+
+=================================== FAILURES ===================================
+_______________ test_thought_signature_extraction_from_response ________________
+
+    def test_thought_signature_extraction_from_response() -> None:
+        """Test thought signature extraction from API response Parts."""
+    
+        # Test thought part with signature
+        binary_signature = b"test_signature_data"
+        thought_part = Part(
+            text="I need to think about this...",
+            thought=True,
+            thought_signature=binary_signature,
+        )
+    
+        candidate = Candidate(content=Content(parts=[thought_part]))
+    
+        # Parse candidate (the function will extract signature if present)
+        result = _parse_response_candidate(candidate, streaming=False)
+    
+        # Check that signature was extracted and base64 encoded
+        assert isinstance(result.content, list)
+        thinking_blocks = [
+            b for b in result.content if isinstance(b, dict) and b.get("type") == "thinking"
+        ]
+>       assert len(thinking_blocks) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/unit_tests/test_chat_models.py:2396: AssertionError
+=============================== warnings summary ===============================
+../../.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../.venv/lib/python3.14/site-packages/google/genai/types.py:43
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/google/genai/types.py:43: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+    VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit_tests/test_chat_models.py::test_thought_signature_extraction_from_response
+======================== 1 failed, 2 warnings in 0.61s =========================

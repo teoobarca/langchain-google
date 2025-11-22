@@ -1,0 +1,374 @@
+/Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/langsmith/schemas.py:22: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1 import (
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0
+rootdir: /Users/hamper/Documents/Programming/nexana/langchain-google/libs/genai
+configfile: pyproject.toml
+plugins: anyio-4.11.0, langsmith-0.4.46
+collected 6 items
+
+tests/unit_tests/test_chat_models.py FFFFFF
+
+=================================== FAILURES ===================================
+___________ test_timeout_streaming_parameter_handling[5.0-5.0-True] ____________
+
+mock_retry = <MagicMock name='_chat_with_retry' id='4742948784'>
+instance_timeout = 5.0, expected_timeout = 5.0, should_have_timeout = True
+
+    @pytest.mark.parametrize(
+        "instance_timeout,expected_timeout,should_have_timeout",
+        [
+            (5.0, 5.0, True),  # Instance-level timeout
+            (None, None, False),  # No timeout
+        ],
+    )
+    @patch("langchain_google_genai.chat_models._chat_with_retry")
+    def test_timeout_streaming_parameter_handling(
+        mock_retry: Mock,
+        instance_timeout: float | None,
+        expected_timeout: float | None,
+        should_have_timeout: bool,
+    ) -> None:
+        """Test timeout parameter handling for streaming methods."""
+    
+        # Mock the return value for _chat_with_retry to return an iterator
+        def mock_stream() -> Iterator[GenerateContentResponse]:
+            yield GenerateContentResponse.model_validate(
+                {
+                    "candidates": [
+                        {
+                            "content": {"parts": [{"text": "chunk1"}]},
+                            "finish_reason": genai_types.FinishReason.STOP,
+                        }
+                    ]
+                }
+            )
+    
+        mock_retry.return_value = mock_stream()
+    
+        # Create LLM with optional instance-level timeout
+        llm_kwargs = {
+            "model": "gemini-2.5-flash",
+            "google_api_key": SecretStr(FAKE_API_KEY),
+        }
+        if instance_timeout is not None:
+            llm_kwargs["timeout"] = instance_timeout
+    
+        llm = ChatGoogleGenerativeAI(**llm_kwargs)
+    
+        # Call _stream (which should pass timeout to _chat_with_retry)
+        messages: list[BaseMessage] = [HumanMessage(content="Hello")]
+>       list(llm._stream(messages))  # Convert generator to list to trigger execution
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit_tests/test_chat_models.py:1828: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+langchain_google_genai/chat_models.py:2196: in _stream
+    _chat_result = _response_to_result(
+langchain_google_genai/chat_models.py:1025: in _response_to_result
+    ChatGenerationChunk(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ChatGenerationChunk(), args = ()
+kwargs = {'generation_info': {'finish_reason': 'STOP', 'model_name': None, 'safety_ratings': []}, 'message': AIMessage(content='chunk1', additional_kwargs={}, response_metadata={})}
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """"""  # noqa: D419  # Intentional blank docstring
+>       super().__init__(*args, **kwargs)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ChatGenerationChunk
+E       message
+E         Input should be a valid dictionary or instance of BaseMessageChunk [type=model_type, input_value=AIMessage(content='chunk1...}, response_metadata={}), input_type=AIMessage]
+E           For further information visit https://errors.pydantic.dev/2.12/v/model_type
+
+../../.venv/lib/python3.14/site-packages/langchain_core/load/serializable.py:116: ValidationError
+__________ test_timeout_streaming_parameter_handling[None-None-False] __________
+
+mock_retry = <MagicMock name='_chat_with_retry' id='4742948112'>
+instance_timeout = None, expected_timeout = None, should_have_timeout = False
+
+    @pytest.mark.parametrize(
+        "instance_timeout,expected_timeout,should_have_timeout",
+        [
+            (5.0, 5.0, True),  # Instance-level timeout
+            (None, None, False),  # No timeout
+        ],
+    )
+    @patch("langchain_google_genai.chat_models._chat_with_retry")
+    def test_timeout_streaming_parameter_handling(
+        mock_retry: Mock,
+        instance_timeout: float | None,
+        expected_timeout: float | None,
+        should_have_timeout: bool,
+    ) -> None:
+        """Test timeout parameter handling for streaming methods."""
+    
+        # Mock the return value for _chat_with_retry to return an iterator
+        def mock_stream() -> Iterator[GenerateContentResponse]:
+            yield GenerateContentResponse.model_validate(
+                {
+                    "candidates": [
+                        {
+                            "content": {"parts": [{"text": "chunk1"}]},
+                            "finish_reason": genai_types.FinishReason.STOP,
+                        }
+                    ]
+                }
+            )
+    
+        mock_retry.return_value = mock_stream()
+    
+        # Create LLM with optional instance-level timeout
+        llm_kwargs = {
+            "model": "gemini-2.5-flash",
+            "google_api_key": SecretStr(FAKE_API_KEY),
+        }
+        if instance_timeout is not None:
+            llm_kwargs["timeout"] = instance_timeout
+    
+        llm = ChatGoogleGenerativeAI(**llm_kwargs)
+    
+        # Call _stream (which should pass timeout to _chat_with_retry)
+        messages: list[BaseMessage] = [HumanMessage(content="Hello")]
+>       list(llm._stream(messages))  # Convert generator to list to trigger execution
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit_tests/test_chat_models.py:1828: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+langchain_google_genai/chat_models.py:2196: in _stream
+    _chat_result = _response_to_result(
+langchain_google_genai/chat_models.py:1025: in _response_to_result
+    ChatGenerationChunk(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ChatGenerationChunk(), args = ()
+kwargs = {'generation_info': {'finish_reason': 'STOP', 'model_name': None, 'safety_ratings': []}, 'message': AIMessage(content='chunk1', additional_kwargs={}, response_metadata={})}
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """"""  # noqa: D419  # Intentional blank docstring
+>       super().__init__(*args, **kwargs)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ChatGenerationChunk
+E       message
+E         Input should be a valid dictionary or instance of BaseMessageChunk [type=model_type, input_value=AIMessage(content='chunk1...}, response_metadata={}), input_type=AIMessage]
+E           For further information visit https://errors.pydantic.dev/2.12/v/model_type
+
+../../.venv/lib/python3.14/site-packages/langchain_core/load/serializable.py:116: ValidationError
+_______________ test_grounding_metadata_to_citations_conversion ________________
+
+    def test_grounding_metadata_to_citations_conversion() -> None:
+        """Test grounding metadata is properly converted to citations in content blocks."""
+        raw_response = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "text": (
+                                    "Spain won the UEFA Euro 2024 championship by "
+                                    "defeating England 2-1 in the final."
+                                )
+                            }
+                        ]
+                    },
+                    "grounding_metadata": {
+                        "grounding_chunks": [
+                            {
+                                "web": {
+                                    "uri": "https://uefa.com/euro2024",
+                                    "title": "UEFA Euro 2024 Results",
+                                }
+                            },
+                            {
+                                "web": {
+                                    "uri": "https://bbc.com/sport/football",
+                                    "title": "BBC Sport Football",
+                                }
+                            },
+                        ],
+                        "grounding_supports": [
+                            {
+                                "segment": {
+                                    "start_index": 0,
+                                    "end_index": 40,
+                                    "text": "Spain won the UEFA Euro 2024 championship",
+                                    "part_index": 0,
+                                },
+                                "grounding_chunk_indices": [0],
+                                "confidence_scores": [0.95],
+                            },
+                            {
+                                "segment": {
+                                    "start_index": 41,
+                                    "end_index": 78,
+                                    "text": "by defeating England 2-1 in the final",
+                                    "part_index": 0,
+                                },
+                                "grounding_chunk_indices": [0, 1],
+                                "confidence_scores": [0.92, 0.88],
+                            },
+                        ],
+                        "web_search_queries": [
+                            "UEFA Euro 2024 winner",
+                            "Euro 2024 final score",
+                        ],
+                    },
+                }
+            ],
+            "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
+            "usage_metadata": {
+                "prompt_token_count": 10,
+                "candidates_token_count": 20,
+                "total_token_count": 30,
+            },
+        }
+    
+>       response = GenerateContentResponse.model_validate(raw_response)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for GenerateContentResponse
+E       prompt_feedback.block_reason
+E         Input should be 'BLOCKED_REASON_UNSPECIFIED', 'SAFETY', 'OTHER', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'IMAGE_SAFETY', 'MODEL_ARMOR' or 'JAILBREAK' [type=enum, input_value=0, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+tests/unit_tests/test_chat_models.py:1516: ValidationError
+__________________ test_empty_grounding_metadata_no_citations __________________
+
+    def test_empty_grounding_metadata_no_citations() -> None:
+        """Test that empty grounding metadata doesn't create citations."""
+        raw_response = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "This is a response without grounding."}]
+                    },
+                    "grounding_metadata": {},
+                }
+            ],
+            "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
+            "usage_metadata": {
+                "prompt_token_count": 5,
+                "candidates_token_count": 8,
+                "total_token_count": 13,
+            },
+        }
+    
+>       response = GenerateContentResponse.model_validate(raw_response)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for GenerateContentResponse
+E       prompt_feedback.block_reason
+E         Input should be 'BLOCKED_REASON_UNSPECIFIED', 'SAFETY', 'OTHER', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'IMAGE_SAFETY', 'MODEL_ARMOR' or 'JAILBREAK' [type=enum, input_value=0, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+tests/unit_tests/test_chat_models.py:1582: ValidationError
+_______________ test_grounding_metadata_missing_optional_fields ________________
+
+    def test_grounding_metadata_missing_optional_fields() -> None:
+        """Test handling of grounding metadata with missing optional fields."""
+        raw_response = {
+            "candidates": [
+                {
+                    "content": {"parts": [{"text": "Sample text"}]},
+                    "grounding_metadata": {
+                        "grounding_chunks": [
+                            {
+                                "web": {
+                                    "uri": "https://example.com",
+                                    # Missing 'title'
+                                }
+                            }
+                        ],
+                        "grounding_supports": [
+                            {
+                                "segment": {
+                                    # Missing 'text'
+                                    "start_index": 0,
+                                    "end_index": 11,
+                                    "part_index": 0,
+                                },
+                                "grounding_chunk_indices": [0],
+                            }
+                        ],
+                        # Missing 'web_search_queries' (optional field)
+                    },
+                }
+            ],
+            "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
+            "usage_metadata": {
+                "prompt_token_count": 5,
+                "candidates_token_count": 3,
+                "total_token_count": 8,
+            },
+        }
+    
+>       response = GenerateContentResponse.model_validate(raw_response)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for GenerateContentResponse
+E       prompt_feedback.block_reason
+E         Input should be 'BLOCKED_REASON_UNSPECIFIED', 'SAFETY', 'OTHER', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'IMAGE_SAFETY', 'MODEL_ARMOR' or 'JAILBREAK' [type=enum, input_value=0, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+tests/unit_tests/test_chat_models.py:1635: ValidationError
+____________________ test_grounding_metadata_multiple_parts ____________________
+
+    def test_grounding_metadata_multiple_parts() -> None:
+        """Test grounding metadata with multiple content parts."""
+        raw_response = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "First part. "},
+                            {"text": "Second part with citation."},
+                        ]
+                    },
+                    "grounding_metadata": {
+                        "grounding_chunks": [
+                            {"web": {"uri": "https://example.com", "title": "Example"}}
+                        ],
+                        "grounding_supports": [
+                            {
+                                "segment": {
+                                    "start_index": 12,  # Points to second part
+                                    "end_index": 38,
+                                    "text": "Second part with citation",
+                                    "part_index": 1,  # Indicates which part
+                                },
+                                "grounding_chunk_indices": [0],
+                            }
+                        ],
+                    },
+                }
+            ],
+            "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
+            "usage_metadata": {
+                "prompt_token_count": 10,
+                "candidates_token_count": 10,
+                "total_token_count": 20,
+            },
+        }
+    
+>       response = GenerateContentResponse.model_validate(raw_response)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for GenerateContentResponse
+E       prompt_feedback.block_reason
+E         Input should be 'BLOCKED_REASON_UNSPECIFIED', 'SAFETY', 'OTHER', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'IMAGE_SAFETY', 'MODEL_ARMOR' or 'JAILBREAK' [type=enum, input_value=0, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+tests/unit_tests/test_chat_models.py:1700: ValidationError
+=============================== warnings summary ===============================
+../../.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../.venv/lib/python3.14/site-packages/google/genai/types.py:43
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/google/genai/types.py:43: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+    VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit_tests/test_chat_models.py::test_timeout_streaming_parameter_handling[5.0-5.0-True]
+FAILED tests/unit_tests/test_chat_models.py::test_timeout_streaming_parameter_handling[None-None-False]
+FAILED tests/unit_tests/test_chat_models.py::test_grounding_metadata_to_citations_conversion
+FAILED tests/unit_tests/test_chat_models.py::test_empty_grounding_metadata_no_citations
+FAILED tests/unit_tests/test_chat_models.py::test_grounding_metadata_missing_optional_fields
+FAILED tests/unit_tests/test_chat_models.py::test_grounding_metadata_multiple_parts
+======================== 6 failed, 2 warnings in 2.19s =========================

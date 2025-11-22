@@ -1,0 +1,271 @@
+/Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/langsmith/schemas.py:22: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1 import (
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0
+rootdir: /Users/hamper/Documents/Programming/nexana/langchain-google/libs/genai
+configfile: pyproject.toml
+plugins: anyio-4.11.0, langsmith-0.4.46
+collected 1 item
+
+tests/unit_tests/test_chat_models.py DEBUG: genai_types has Blob: True
+DEBUG: genai_types has Content: True
+DEBUG: part=media_resolution=None code_execution_result=None executable_code=None file_data=None function_call=None function_response=None inline_data=None text='I need to think...' thought=True thought_signature=b'test_sig_data' video_metadata=None, type=<class 'google.genai.types.Part'>
+DEBUG: part=media_resolution=None code_execution_result=None executable_code=None file_data=None function_call=None function_response=None inline_data=None text='Final answer' thought=None thought_signature=b'test_sig_data' video_metadata=None, type=<class 'google.genai.types.Part'>
+F
+
+=================================== FAILURES ===================================
+_____________________ test_signature_round_trip_conversion _____________________
+
+    def test_signature_round_trip_conversion() -> None:
+        """Test complete round-trip signature handling in conversation context."""
+    
+        # Debug print
+        print(f"DEBUG: genai_types has Blob: {'Blob' in dir(genai_types)}")
+        print(f"DEBUG: genai_types has Content: {'Content' in dir(genai_types)}")
+    
+        # Create a mock response with thought signature
+        binary_sig = b"test_sig_data"
+        mock_response = GenerateContentResponse(
+            candidates=[
+                Candidate(
+                    content=Content(
+                        parts=[
+                            Part(
+                                text="I need to think...",
+                                thought=True,
+                                thought_signature=binary_sig,
+                            ),
+                            Part(text="Final answer", thought_signature=binary_sig),
+                        ]
+                    )
+                )
+            ]
+        )
+    
+        with patch("langchain_google_genai.chat_models._chat_with_retry") as mock_chat:
+            mock_chat.return_value = mock_response
+    
+            llm = ChatGoogleGenerativeAI(
+                model=MODEL_NAME,
+                google_api_key=SecretStr(FAKE_API_KEY),
+                output_version="v1",
+                include_thoughts=True,
+            )
+    
+            # First call - get response with signatures
+            result = llm.invoke("Test message")
+    
+            # Verify signatures were extracted
+            assert isinstance(result.content, list)
+    
+            # Find blocks with signatures
+            sig_blocks = []
+            for block in result.content:
+                if isinstance(block, dict):
+                    if block.get("type") == "reasoning" and "signature" in block:
+                        sig_blocks.append(block)
+                    elif block.get("extras") and "signature" in block["extras"]:
+                        sig_blocks.append(block)
+    
+            assert len(sig_blocks) >= 1, (
+                f"Expected signature blocks, got content: {result.content}"
+            )
+    
+            # Now simulate passing this result back in a conversation
+            with patch(
+                "langchain_google_genai.chat_models._convert_from_v1_to_generativelanguage_v1beta"
+            ) as mock_convert:
+                from langchain_google_genai._compat import (
+                    _convert_from_v1_to_generativelanguage_v1beta as real_convert,
+                )
+    
+                mock_convert.side_effect = real_convert
+    
+                # Create conversation with the signature-containing message
+                conversation = [
+                    HumanMessage(content="First message"),
+                    result,  # This contains signatures
+                    HumanMessage(content="Follow up"),
+                ]
+    
+                # This should trigger signature conversion
+                mock_chat.return_value = GenerateContentResponse(
+                    candidates=[
+                        Candidate(content=Content(parts=[Part(text="Follow up response")]))
+                    ]
+                )
+    
+>               follow_up = llm.invoke(conversation)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit_tests/test_chat_models.py:2534: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+langchain_google_genai/chat_models.py:1963: in invoke
+    return super().invoke(input, config, stop=stop, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py:398: in invoke
+    self.generate_prompt(
+../../.venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py:1117: in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py:927: in generate
+    self._generate_with_cache(
+../../.venv/lib/python3.14/site-packages/langchain_core/language_models/chat_models.py:1221: in _generate_with_cache
+    result = self._generate(
+langchain_google_genai/chat_models.py:2079: in _generate
+    request = self._prepare_request(
+langchain_google_genai/chat_models.py:2342: in _prepare_request
+    system_instruction, history = _parse_chat_history(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_messages = [HumanMessage(content='First message', additional_kwargs={}, response_metadata={}), AIMessage(content=[{'type': 'think...8fed2f4-f0f2-4746-b2aa-6078e15ff128-0'), HumanMessage(content='Follow up', additional_kwargs={}, response_metadata={})]
+convert_system_message_to_human = False, model = 'models/gemini-2.5-flash'
+
+    def _parse_chat_history(
+        input_messages: Sequence[BaseMessage],
+        convert_system_message_to_human: bool = False,
+        model: str | None = None,
+    ) -> tuple[genai_types.Content | None, list[genai_types.Content]]:
+        """Parses sequence of `BaseMessage` into system instruction and formatted messages.
+    
+        Args:
+            input_messages: Sequence of `BaseMessage` objects representing the chat history.
+            convert_system_message_to_human: Whether to convert the first system message
+                into a `HumanMessage`. Deprecated, use system instructions instead.
+            model: The model name, used for version-specific logic.
+    
+        Returns:
+            A tuple containing:
+    
+                - An optional `google.genai.genai_types.Content`
+                    representing the system instruction (if any).
+                - A list of `google.genai.genai_types.Content` representing
+                    the formatted messages.
+        """
+        if convert_system_message_to_human:
+            warnings.warn(
+                "The 'convert_system_message_to_human' parameter is deprecated and will be "
+                "removed in a future version. Use system instructions instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        input_messages = list(input_messages)  # Make a mutable copy
+    
+        # Case where content was serialized to v1 format
+        for idx, message in enumerate(input_messages):
+            if (
+                isinstance(message, AIMessage)
+                and message.response_metadata.get("output_version") == "v1"
+            ):
+                # Unpack known v1 content to v1beta format for the request
+                #
+                # Old content types and any previously serialized messages passed back in to
+                # history will skip this, but hit and processed in `_convert_to_parts`
+                input_messages[idx] = message.model_copy(
+                    update={
+                        "content": _convert_from_v1_to_generativelanguage_v1beta(
+                            cast("list[genai_types.ContentBlock]", message.content),
+                            message.response_metadata.get("model_provider"),
+                        )
+                    }
+                )
+    
+        formatted_messages: list[genai_types.Content] = []
+    
+        system_instruction: genai_types.Content | None = None
+        messages_without_tool_messages = [
+            message for message in input_messages if not isinstance(message, ToolMessage)
+        ]
+        tool_messages = [
+            message for message in input_messages if isinstance(message, ToolMessage)
+        ]
+        for i, message in enumerate(messages_without_tool_messages):
+            if isinstance(message, SystemMessage):
+                system_parts = _convert_to_parts(message.content, model=model)
+                if i == 0:
+                    system_instruction = genai_types.Content(parts=system_parts)
+                elif system_instruction is not None:
+                    system_instruction.parts.extend(system_parts)
+                else:
+                    pass
+                continue
+            if isinstance(message, AIMessage):
+                role = "model"
+                if message.tool_calls:
+                    ai_message_parts = []
+                    function_call_sigs: dict[Any, str] = message.additional_kwargs.get(
+                        _FUNCTION_CALL_THOUGHT_SIGNATURES_MAP_KEY, {}
+                    )
+                    for tool_call_idx, tool_call in enumerate(message.tool_calls):
+                        function_call = genai_types.FunctionCall(
+                            name=tool_call["name"],
+                            args=tool_call["args"],
+                        )
+                        # Check if there's a signature for this function call
+                        sig = function_call_sigs.get(tool_call.get("id"))
+                        ai_message_parts.append(
+                            genai_types.Part(function_call=function_call, thought_signature=sig)
+                        )
+    
+                    tool_messages_parts = _get_ai_message_tool_messages_parts(
+                        tool_messages=tool_messages, ai_message=message, model=model
+                    )
+                    formatted_messages.append(genai_types.Content(role=role, parts=ai_message_parts))
+                    formatted_messages.append(
+                        genai_types.Content(role="user", parts=tool_messages_parts)
+                    )
+                    continue
+                if raw_function_call := message.additional_kwargs.get("function_call"):
+                    function_call = genai_types.FunctionCall(
+                        name=raw_function_call["name"],
+                        args=json.loads(raw_function_call["arguments"]),
+                    )
+                    parts = [genai_types.Part(function_call=function_call)]
+                elif message.response_metadata.get("output_version") == "v1":
+                    # Already converted to v1beta format above
+                    parts = message.content  # type: ignore[assignment]
+                else:
+                    # Prepare request content parts from message.content field
+                    parts = _convert_to_parts(message.content, model=model)
+            elif isinstance(message, HumanMessage):
+                role = "user"
+                parts = _convert_to_parts(message.content, model=model)
+                if i == 1 and convert_system_message_to_human and system_instruction:
+                    parts = list(system_instruction.parts) + parts
+                    system_instruction = None
+            elif isinstance(message, FunctionMessage):
+                role = "user"
+                parts = _convert_tool_message_to_parts(message, model=model)
+            else:
+                msg = f"Unexpected message with type {type(message)} at the position {i}."
+                raise ValueError(msg)
+    
+            # Final step; assemble the Content object to pass to the API
+>           formatted_messages.append(genai_types.Content(role=role, parts=parts))
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 3 validation errors for Content
+E           parts.0.type
+E             Extra inputs are not permitted [type=extra_forbidden, input_value='thinking', input_type=str]
+E               For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+E           parts.0.thinking
+E             Extra inputs are not permitted [type=extra_forbidden, input_value='I need to think...', input_type=str]
+E               For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+E           parts.0.signature
+E             Extra inputs are not permitted [type=extra_forbidden, input_value='dGVzdF9zaWdfZGF0YQ==', input_type=str]
+E               For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+
+langchain_google_genai/chat_models.py:723: ValidationError
+=============================== warnings summary ===============================
+../../.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../.venv/lib/python3.14/site-packages/google/genai/types.py:43
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/google/genai/types.py:43: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+    VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit_tests/test_chat_models.py::test_signature_round_trip_conversion
+======================== 1 failed, 2 warnings in 0.79s =========================

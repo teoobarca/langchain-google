@@ -1,0 +1,54 @@
+/Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/langsmith/schemas.py:22: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1 import (
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0
+rootdir: /Users/hamper/Documents/Programming/nexana/langchain-google/libs/genai
+configfile: pyproject.toml
+plugins: anyio-4.11.0, langsmith-0.4.46
+collected 1 item
+
+tests/unit_tests/test_chat_models.py F
+
+=================================== FAILURES ===================================
+______________________________ test_model_kwargs _______________________________
+
+    def test_model_kwargs() -> None:
+        """Test we can transfer unknown params to `model_kwargs`."""
+>       llm = ChatGoogleGenerativeAI(
+            model=MODEL_NAME,
+            convert_system_message_to_human=True,
+            model_kwargs={"foo": "bar"},
+        )
+
+tests/unit_tests/test_chat_models.py:1294: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+langchain_google_genai/chat_models.py:1813: in __init__
+    super().__init__(**kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ChatGoogleGenerativeAI(model='models/gemini-2.5-flash', default_metadata=(), convert_system_message_to_human=True, model_kwargs={'foo': 'bar'})
+args = ()
+kwargs = {'convert_system_message_to_human': True, 'model': 'gemini-2.5-flash', 'model_kwargs': {'foo': 'bar'}}
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """"""  # noqa: D419  # Intentional blank docstring
+>       super().__init__(*args, **kwargs)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ChatGoogleGenerativeAI
+E         Value error, Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Google Cloud API, provide (`vertexai`, `project` & `location`) arguments. [type=value_error, input_value={'model': 'gemini-2.5-fla...kwargs': {'foo': 'bar'}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.12/v/value_error
+
+../../.venv/lib/python3.14/site-packages/langchain_core/load/serializable.py:116: ValidationError
+=============================== warnings summary ===============================
+../../.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../.venv/lib/python3.14/site-packages/google/genai/types.py:43
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/google/genai/types.py:43: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+    VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit_tests/test_chat_models.py::test_model_kwargs - pydantic_cor...
+======================== 1 failed, 2 warnings in 0.78s =========================

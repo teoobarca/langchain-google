@@ -1,0 +1,261 @@
+/Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/langsmith/schemas.py:22: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1 import (
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0 -- /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/bin/python3.14
+cachedir: .pytest_cache
+rootdir: /Users/hamper/Documents/Programming/nexana/langchain-google/libs/genai
+configfile: pyproject.toml
+plugins: anyio-4.11.0, langsmith-0.4.46
+collecting ... collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+____________ ERROR collecting tests/unit_tests/test_chat_models.py _____________
+
+    """Test chat model integration."""
+    
+    import asyncio
+    import base64
+    import json
+    import warnings
+    from collections.abc import Iterator
+    from concurrent.futures import ThreadPoolExecutor
+    from typing import Any, Literal, cast
+    from unittest.mock import ANY, AsyncMock, Mock, patch
+    
+    import google.genai as genai
+    import pytest
+    import google.genai.types as genai_types
+    from google.genai.types import (
+        Candidate,
+        Content,
+        FunctionCall,
+        FunctionDeclaration,
+        GenerateContentResponse,
+        Part,
+    )
+    from google.api_core.exceptions import ResourceExhausted
+    from langchain_core.load import dumps, loads
+    from langchain_core.messages import (
+        AIMessage,
+        BaseMessage,
+        FunctionMessage,
+        HumanMessage,
+        SystemMessage,
+        ToolMessage,
+    )
+    from langchain_core.messages import content as types
+    from langchain_core.messages.block_translators.google_genai import (
+        _convert_to_v1_from_genai,
+    )
+    from langchain_core.messages.tool import tool_call as create_tool_call
+    from langchain_core.outputs import ChatGeneration, ChatResult
+    from pydantic import BaseModel, Field, SecretStr
+    from pydantic_core._pydantic_core import ValidationError
+    
+>   from langchain_google_genai import HarmBlockThreshold, HarmCategory, Modality
+
+tests/unit_tests/test_chat_models.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    """LangChain Google Generative AI Integration (GenAI).
+    
+    This module integrates Google's Generative AI models, specifically the Gemini series,
+    with the LangChain framework. It provides classes for interacting with chat models and
+    generating embeddings, leveraging Google's advanced AI capabilities.
+    
+    **Chat Models**
+    
+    The `ChatGoogleGenerativeAI` class is the primary interface for interacting with
+    Google's Gemini chat models. It allows users to send and receive messages using a
+    specified Gemini model, suitable for various conversational AI applications.
+    
+    **LLMs**
+    
+    The `GoogleGenerativeAI` class is the primary interface for interacting with Google's
+    Gemini LLMs. It allows users to generate text using a specified Gemini model.
+    
+    **Embeddings**
+    
+    The `GoogleGenerativeAIEmbeddings` class provides functionalities to generate embeddings
+    using Google's models. These embeddings can be used for a range of NLP tasks, including
+    semantic analysis, similarity comparisons, and more.
+    
+    **Using Chat Models**
+    
+    After setting up your environment with the required API key, you can interact with the
+    Google Gemini models.
+    
+    ```python
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro")
+    llm.invoke("Sing a ballad of LangChain.")
+    ```
+    
+    **Using LLMs**
+    
+    The package also supports generating text with Google's models.
+    
+    ```python
+    from langchain_google_genai import GoogleGenerativeAI
+    
+    llm = GoogleGenerativeAI(model="gemini-2.5-pro")
+    llm.invoke("Once upon a time, a library called LangChain")
+    ```
+    
+    **Embedding Generation**
+    
+    The package also supports creating embeddings with Google's models, useful for textual
+    similarity and other NLP applications.
+    
+    ```python
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    embeddings.embed_query("hello, world!")
+    ```
+    """
+    
+    from langchain_google_genai._enums import (
+        HarmBlockThreshold,
+        HarmCategory,
+        MediaResolution,
+        Modality,
+    )
+>   from langchain_google_genai.chat_models import ChatGoogleGenerativeAI
+
+langchain_google_genai/__init__.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    from __future__ import annotations
+    
+    import asyncio
+    import base64
+    import io
+    import json
+    import logging
+    import mimetypes
+    import time
+    import uuid
+    import warnings
+    import wave
+    from collections.abc import AsyncIterator, Callable, Iterator, Mapping, Sequence
+    from difflib import get_close_matches
+    from operator import itemgetter
+    from typing import (
+        Any,
+        Literal,
+        cast,
+    )
+    
+    import filetype  # type: ignore[import-untyped]
+    import proto  # type: ignore[import-untyped]
+    from google import genai
+    from google.genai import types
+    from google.api_core.exceptions import (
+        FailedPrecondition,
+        GoogleAPIError,
+        InvalidArgument,
+        ResourceExhausted,
+        ServiceUnavailable,
+    )
+    from langchain_core.callbacks.manager import (
+        AsyncCallbackManagerForLLMRun,
+        CallbackManagerForLLMRun,
+    )
+    from langchain_core.language_models import (
+        LangSmithParams,
+        LanguageModelInput,
+        is_openai_data_block,
+    )
+    from langchain_core.language_models.chat_models import BaseChatModel
+    from langchain_core.messages import (
+        AIMessage,
+        AIMessageChunk,
+        BaseMessage,
+        FunctionMessage,
+        HumanMessage,
+        SystemMessage,
+        ToolMessage,
+        is_data_content_block,
+    )
+    from langchain_core.messages import content as types
+    from langchain_core.messages.ai import UsageMetadata, add_usage, subtract_usage
+    from langchain_core.messages.tool import invalid_tool_call, tool_call, tool_call_chunk
+    from langchain_core.output_parsers import JsonOutputParser, PydanticOutputParser
+    from langchain_core.output_parsers.base import OutputParserLike
+    from langchain_core.output_parsers.openai_tools import (
+        JsonOutputKeyToolsParser,
+        PydanticToolsParser,
+        parse_tool_calls,
+    )
+    from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
+    from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
+    from langchain_core.tools import BaseTool
+    from langchain_core.utils import get_pydantic_field_names
+    from langchain_core.utils.function_calling import (
+        convert_to_json_schema,
+        convert_to_openai_tool,
+    )
+    from langchain_core.utils.pydantic import is_basemodel_subclass
+    from langchain_core.utils.utils import _build_model_kwargs
+    from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
+    from pydantic.v1 import BaseModel as BaseModelV1
+    from tenacity import (
+        before_sleep_log,
+        retry,
+        retry_if_exception_type,
+        stop_after_attempt,
+        wait_exponential,
+    )
+    from typing_extensions import Self, is_typeddict
+    
+    from langchain_google_genai._common import (
+        GoogleGenerativeAIError,
+        SafetySettingDict,
+        _BaseGoogleGenerativeAI,
+        get_client_info,
+    )
+    from langchain_google_genai._compat import (
+        _convert_from_v1_to_generativelanguage_v1beta,
+    )
+    from langchain_google_genai._function_utils import (
+        _tool_choice_to_tool_config,
+        _ToolChoiceType,
+        _ToolConfigDict,
+        _ToolDict,
+        convert_to_genai_function_declarations,
+        is_basemodel_subclass_safe,
+        tool_to_dict,
+    )
+    from langchain_google_genai._image_utils import (
+        ImageBytesLoader,
+        image_bytes_to_b64_string,
+    )
+    
+    from . import _genai_extension as genaix
+    
+    logger = logging.getLogger(__name__)
+    
+    _allowed_params_prediction_service = ["model", "contents", "config", "timeout"]
+    
+>   _FunctionDeclarationType = types.FunctionDeclaration | dict[str, Any] | Callable[..., Any]
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'langchain_core.messages.content' has no attribute 'FunctionDeclaration'
+
+langchain_google_genai/chat_models.py:113: AttributeError
+=============================== warnings summary ===============================
+../../.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../.venv/lib/python3.14/site-packages/google/genai/types.py:43
+  /Users/hamper/Documents/Programming/nexana/langchain-google/.venv/lib/python3.14/site-packages/google/genai/types.py:43: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+    VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/unit_tests/test_chat_models.py - AttributeError: module 'langchain_core.messages.content' has no attribute 'FunctionDeclaration'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+========================= 2 warnings, 1 error in 0.57s =========================
