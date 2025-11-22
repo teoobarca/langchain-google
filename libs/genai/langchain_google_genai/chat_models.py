@@ -2480,14 +2480,85 @@ class ChatGoogleGenerativeAI(_BaseGoogleGenerativeAI, BaseChatModel):
             import proto  # type: ignore[import-untyped]
             from langchain_google_genai._function_utils import tool_to_dict
 
+            def _transform_tool_dict(tool_dict: dict) -> dict:
+                """Transform old SDK tool dict to new SDK schema.
+
+                Old SDK uses:
+                - type_ (integer enum)
+                - format_ (string)
+                - behavior (integer)
+
+                New SDK expects:
+                - type (string enum like "STRING", "OBJECT")
+                - No format_ field
+                - behavior (string enum like "UNSPECIFIED")
+                """
+                # Type enum mapping (old SDK ints -> new SDK strings)
+                TYPE_MAP = {
+                    0: "TYPE_UNSPECIFIED",
+                    1: "STRING",
+                    2: "NUMBER",
+                    3: "INTEGER",
+                    4: "BOOLEAN",
+                    5: "ARRAY",
+                    6: "OBJECT",
+                }
+
+                # Behavior enum mapping
+                BEHAVIOR_MAP = {
+                    0: "UNSPECIFIED",
+                    1: "BLOCKING",
+                    2: "NON_BLOCKING",
+                }
+
+                def transform_schema(schema: any) -> any:
+                    """Recursively transform schema dict."""
+                    if not isinstance(schema, dict):
+                        return schema
+
+                    result = {}
+                    for key, value in schema.items():
+                        # Skip fields not in new SDK
+                        if key in ['format_', 'format']:
+                            continue
+
+                        # Transform type_ to type with string value
+                        if key == 'type_':
+                            if isinstance(value, int):
+                                result['type'] = TYPE_MAP.get(value, "STRING")
+                            else:
+                                result['type'] = value
+                        # Transform behavior from int to string
+                        elif key == 'behavior':
+                            if isinstance(value, int):
+                                result['behavior'] = BEHAVIOR_MAP.get(value, "UNSPECIFIED")
+                            else:
+                                result['behavior'] = value
+                        # Recursively transform ALL nested dicts and lists
+                        elif isinstance(value, dict):
+                            result[key] = transform_schema(value)
+                        elif isinstance(value, list):
+                            result[key] = [
+                                transform_schema(item) if isinstance(item, dict) else item
+                                for item in value
+                            ]
+                        else:
+                            result[key] = value
+
+                    return result
+
+                return transform_schema(tool_dict)
+
             serialized_tools = []
             for tool in formatted_tools:
                 if isinstance(tool, proto.Message):
-                    # Old SDK Proto message - convert to dict
-                    serialized_tools.append(tool_to_dict(tool))
+                    # Old SDK Proto message - convert to dict and transform schema
+                    old_dict = tool_to_dict(tool)
+                    new_dict = _transform_tool_dict(old_dict)
+                    serialized_tools.append(new_dict)
                 elif isinstance(tool, dict):
-                    # Already a dict
-                    serialized_tools.append(tool)
+                    # Already a dict - might still need transformation
+                    serialized_tools.append(_transform_tool_dict(tool))
                 elif hasattr(tool, 'model_dump'):
                     # New SDK Pydantic model - serialize
                     serialized_tools.append(tool.model_dump(mode='json', exclude_none=True))
