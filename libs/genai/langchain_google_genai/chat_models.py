@@ -1020,25 +1020,13 @@ def _response_to_result(
     usage = response.usage_metadata
     lc_usage = None
     if usage:
-        input_tokens = usage.prompt_token_count
-        # thoughts_token_count might be missing if not supported?
-        # New SDK has it?
-        thought_tokens = getattr(usage, "candidates_tokens_details", None)
-        # Actually, check usage structure.
-        # Assuming similar structure or mapping.
-        # For now, basic mapping.
+        # Ensure all values are integers, not None
+        input_tokens = usage.prompt_token_count or 0
+        output_tokens = usage.candidates_token_count or 0
+        total_tokens = usage.total_token_count or 0
 
-        # usage.candidates_token_count
-        output_tokens = usage.candidates_token_count
-        total_tokens = usage.total_token_count
-
-        # cache_read_tokens?
-        # usage.cached_content_token_count?
-        cache_read_tokens = getattr(usage, "cached_content_token_count", 0)
-
-        # thoughts?
-        # usage.candidates_tokens_details might have reasoning_token_count?
-        # Let's assume standard usage for now.
+        # cache_read_tokens - attribute might exist but be None
+        cache_read_tokens = getattr(usage, "cached_content_token_count", None) or 0
 
         cumulative_usage = UsageMetadata(
             input_tokens=input_tokens,
