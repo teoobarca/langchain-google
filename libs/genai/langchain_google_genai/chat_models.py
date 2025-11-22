@@ -1053,7 +1053,19 @@ def _response_to_result(
                 else:
                      generation_info["finish_reason"] = str(candidate.finish_reason)
 
-            generation_info["model_name"] = response.model_version
+
+            # Use response.model_version if available, otherwise fallback to self.model
+            # Ensure we don't accumulate/duplicate the model name
+            model_name = None
+            if hasattr(response, 'model_version') and response.model_version:
+                model_name = str(response.model_version)
+            if not model_name:
+                # Fallback to self.model, stripping "models/" prefix for consistency
+                model_name = str(self.model) if hasattr(self, 'model') else ""
+                if model_name.startswith("models/"):
+                    model_name = model_name[len("models/"):]
+
+            generation_info["model_name"] = model_name
 
             generation_info["safety_ratings"] = []
             if candidate.safety_ratings:
