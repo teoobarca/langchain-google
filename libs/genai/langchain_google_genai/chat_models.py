@@ -2474,7 +2474,27 @@ class ChatGoogleGenerativeAI(_BaseGoogleGenerativeAI, BaseChatModel):
         )
 
         if formatted_tools:
-            config.tools = formatted_tools
+            # Convert old SDK gapic.Tool objects to dicts for new SDK
+            # The new SDK (google-genai) uses Pydantic models which need dict input
+            # But convert_to_genai_function_declarations returns old SDK Proto objects
+            import proto  # type: ignore[import-untyped]
+            from langchain_google_genai._function_utils import tool_to_dict
+
+            serialized_tools = []
+            for tool in formatted_tools:
+                if isinstance(tool, proto.Message):
+                    # Old SDK Proto message - convert to dict
+                    serialized_tools.append(tool_to_dict(tool))
+                elif isinstance(tool, dict):
+                    # Already a dict
+                    serialized_tools.append(tool)
+                elif hasattr(tool, 'model_dump'):
+                    # New SDK Pydantic model - serialize
+                    serialized_tools.append(tool.model_dump(mode='json', exclude_none=True))
+                else:
+                    # Passthrough (e.g., GoogleTool with code_execution)
+                    serialized_tools.append(tool)
+            config.tools = serialized_tools
         if formatted_tool_config:
             config.tool_config = formatted_tool_config
         if formatted_safety_settings:
